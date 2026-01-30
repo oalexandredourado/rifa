@@ -68,7 +68,7 @@ function confirmar(){
   if(!confirm(`Confirma a aquisição do número ${selecionado.numero} – ${selecionado.nome}?`))
     return;
 
-  fetch("URL_WEB_APP_AQUI",{
+  fetch("https://script.google.com/macros/s/AKfycbz99Q5wAIyfBQ8MF0GoNopGi_5s4ObjFTKho7XwpbiUibR40TAnbYUxitROkizvSHWVXw/exec",{
     method:"POST",
     body:JSON.stringify({
       numero: selecionado.numero,
