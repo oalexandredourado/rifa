@@ -1,183 +1,83 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
 <meta charset="UTF-8">
-<title>Rifa – Filosofia</title>
+<title>Galeria Filosófica</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-}
-
-h1 {
-  text-align: center;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-  padding: 20px;
-}
-
-.card {
-  background: white;
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  text-align: center;
-}
-
-.card img {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.card.escolhido {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-/* MODAL */
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-box {
-  background: white;
-  padding: 20px;
-  width: 360px;
-  max-height: 90vh;
-  overflow-y: auto;
-  border-radius: 10px;
-}
-
-.modal-box img {
-  width: 100%;
-  border-radius: 6px;
-}
-
-.hidden {
-  display: none;
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  cursor: pointer;
-}
+body { font-family: Arial; background:#eee; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,200px); gap:16px; padding:20px;}
+.card { background:#fff; padding:10px; border-radius:8px; cursor:pointer;}
+.card.indisponivel { opacity:.4 }
+.card img { width:100%; height:200px; object-fit:cover }
+.modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center }
+.box { background:#fff; padding:20px; width:360px; border-radius:10px }
 </style>
-</head>
-
-<body>
 
 <h1>Escolha seu filósofo</h1>
-
 <div class="grid" id="galeria"></div>
 
 <div class="modal" id="modal">
-  <div class="modal-box">
+  <div class="box">
     <h3 id="titulo"></h3>
-    <img id="img">
-    <p id="texto"></p>
+    <img id="img" width="100%">
+    <p id="bio"></p>
 
-    <button id="btnEscolher">Escolher este filósofo</button>
+    <button id="btnEscolher">Escolher</button>
 
-    <div id="form" class="hidden">
+    <div id="form" style="display:none">
       <input id="nome" placeholder="Nome completo"><br><br>
-      <input id="tel" placeholder="Telefone"><br>
-      <button onclick="enviar()">Enviar</button>
+      <input id="tel" placeholder="Telefone"><br><br>
+      <button onclick="enviar()">Confirmar</button>
     </div>
   </div>
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbz99Q5wAIyfBQ8MF0GoNopGi_5s4ObjFTKho7XwpbiUibR40TAnbYUxitROkizvSHWVXw/exec";
-let atual = null;
+const API = "https://script.google.com/macros/s/AKfycbxH-zQTIJbgY7ceDgcQgJLrCh-WUEo0huB8BZxUrwjwdrRJcSme4iIUsSUxtRFpo3rEpg/exec";
+let atual;
 
 fetch(API)
-.then(r => r.json())
-.then(lista => {
-  const g = document.getElementById("galeria");
-
-  lista.forEach(f => {
-    const c = document.createElement("div");
-    c.className = "card " + (f.status === "escolhido" ? "escolhido" : "");
-    c.innerHTML = `
-      <img src="${f.imagem}">
-      <b>${f.numero}</b><br>${f.nome}
-    `;
-
-    if (f.status === "disponivel") {
+  .then(r => r.json())
+  .then(dados => {
+    dados.forEach(f => {
+      const c = document.createElement("div");
+      c.className = "card " + (f.status !== "disponivel" ? "indisponivel" : "");
+      c.innerHTML = `<img src="${f.imagem}"><b>${f.numero}</b><br>${f.nome}`;
       c.onclick = () => abrir(f);
-    }
-
-    g.appendChild(c);
+      galeria.appendChild(c);
+    });
   });
-});
 
 function abrir(f) {
   atual = f;
-  document.getElementById("titulo").innerText = `Número ${f.numero} – ${f.nome}`;
-  document.getElementById("img").src = f.imagem;
-  document.getElementById("texto").innerText = f.texto || "";
-  document.getElementById("form").classList.add("hidden");
+  titulo.innerText = `Nº ${f.numero} – ${f.nome}`;
+  img.src = f.imagem;
+  bio.innerText = f.texto;
 
-  document.getElementById("btnEscolher").onclick = () => {
-    document.getElementById("form").classList.remove("hidden");
-  };
+  btnEscolher.style.display = f.status === "disponivel" ? "block" : "none";
+  form.style.display = "none";
 
-  document.getElementById("modal").style.display = "flex";
+  modal.style.display = "flex";
+
+  btnEscolher.onclick = () => form.style.display = "block";
 }
 
 function enviar() {
-  const nome = document.getElementById("nome").value;
-  const tel = document.getElementById("tel").value;
-
-  if (!nome || !tel) {
-    alert("Preencha todos os campos");
-    return;
-  }
-
-  if (!confirm(`Confirma a aquisição do número ${atual.numero} – ${atual.nome}?`)) {
-    return;
-  }
+  if (!confirm(`Confirma a aquisição do número ${atual.numero} - ${atual.nome}?`)) return;
 
   fetch(API, {
-    method: "POST",
+    method:"POST",
     body: JSON.stringify({
-      numero: atual.numero,
-      filosofo: atual.nome,
-      nome: nome,
-      telefone: tel
+      nome: nome.value,
+      telefone: tel.value,
+      numero: atual.numero
     })
-  })
-  .then(r => r.text())
-  .then(res => {
-    if (res === "OK") {
-      alert("Confirmado com sucesso!");
-      location.reload();
-    } else {
-      alert("Este número já foi escolhido.");
-    }
+  }).then(() => {
+    alert("Confirmado!");
+    location.reload();
   });
 }
 
-document.getElementById("modal").onclick = e => {
-  if (e.target.id === "modal") {
-    e.target.style.display = "none";
-  }
-};
+modal.onclick = e => e.target === modal && (modal.style.display="none");
 </script>
-
-</body>
 </html>
