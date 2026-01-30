@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeria da Rifa - Filósofos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .card-sold {
+            filter: grayscale(1);
+            opacity: 0.7;
+        }
+
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+
+        .philosopher-image {
+            aspect-ratio: 1/1;
+            object-fit: cover;
+        }
+
+        /* Animação simples de carregamento */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-2">Rifa dos Filósofos</h1>
+            <p class="text-slate-600 italic">Escolha sua opção e acompanhe a disponibilidade em tempo real.</p>
+            <div class="flex justify-center gap-4 mt-6">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                    <span class="text-sm font-medium">Disponível</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span class="text-sm font-medium">Escolhido</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="flex flex-col items-center justify-center py-20">
+            <div class="loader mb-4"></div>
+            <p class="text-slate-500">Carregando dados da planilha...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+            <strong class="font-bold">Erro!</strong>
+            <span class="block sm:inline"> Não foi possível carregar os dados. Verifique se a planilha está publicada corretamente.</span>
+        </div>
+
+        <!-- Gallery Grid -->
+        <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <footer class="mt-20 text-center text-slate-400 text-sm border-t pt-8">
+            <p>Atualize a página para ver as mudanças feitas na planilha.</p>
+        </footer>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCHuiDn2SUvgAY-cWCcX6AaCCZx9e7rRWmnuywZOt_fm70UfUTapSIiF5JHX7iwpzhnsYgqigrUE7k/pub?gid=0&single=true&output=csv';
+
+        async function fetchRaffleData() {
+            try {
+                const response = await fetch(CSV_URL);
+                if (!response.ok) throw new Error('Falha na rede');
+                
+                const csvText = await response.text();
+                parseAndRender(csvText);
+                
+                document.getElementById('loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Erro ao buscar dados:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error-message').classList.remove('hidden');
+            }
+        }
+
+        function parseAndRender(csvData) {
+            // Dividir linhas e remover a primeira (cabeçalho)
+            const rows = csvData.split('\n').map(row => {
+                // Regex simples para lidar com possíveis vírgulas dentro de aspas
+                return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$/g, '').trim());
+            });
+            
+            const headers = rows.shift(); // Remove headers
+            const container = document.getElementById('gallery');
+            container.innerHTML = ''; // Limpar container
+
+            rows.forEach((row, index) => {
+                // Evitar linhas vazias
+                if (row.length < 2 || !row[0]) return;
+
+                const [numero, filosofo, imagem, status] = row;
+                
+                const isAvailable = status.toLowerCase() === 'disponível' || status.toLowerCase() === 'disponivel';
+                const statusColor = isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const statusLabel = isAvailable ? 'Disponível' : 'Escolhido';
+                
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-transform hover:scale-[1.02] ${!isAvailable ? 'card-sold' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${imagem || 'https://via.placeholder.com/400x400?text=Sem+Imagem'}" 
+                             alt="${filosofo}" 
+                             class="philosopher-image w-full"
+                             onerror="this.src='https://via.placeholder.com/400x400?text=Imagem+Indisponível'">
+                        
+                        <div class="absolute top-4 left-4 bg-slate-900 text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg ring-4 ring-white">
+                            ${numero}
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2 truncate">${filosofo}</h3>
+                        <div class="flex items-center justify-between mt-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider status-badge ${statusColor}">
+                                ${statusLabel}
+                            </span>
+                            ${!isAvailable ? '<span class="text-xs text-slate-400 font-medium">ESGOTADO</span>' : ''}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Iniciar a busca ao carregar a página
+        window.addEventListener('DOMContentLoaded', fetchRaffleData);
+    </script>
+</body>
+</html>
