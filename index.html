@@ -70,7 +70,8 @@ function enviar() {
     body: JSON.stringify({
       nome: nome.value,
       telefone: tel.value,
-      numero: atual.numero
+      numero: atual.numero,
+      filosofo: `${atual.numero} - ${atual.nome}`
     })
   }).then(() => {
     alert("Confirmado!");
